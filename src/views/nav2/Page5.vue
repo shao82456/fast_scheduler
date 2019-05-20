@@ -4,7 +4,7 @@
       <el-col :span="6">
         <div class="el-textarea">{{flowName}}</div>
       </el-col>
-      <el-col :span="6" offset="12">
+      <el-col :span="6" :offset="12">
         <el-form :inline="true">
           <el-form-item>
             <el-button type="success" size="small" @click="handleSchedule">Schedule</el-button>
@@ -24,9 +24,70 @@
 
     </el-row>
     <el-row>
-      <el-tabs v-model="activeName" type="card" @tab-click="handleClick">
-        <el-tab-pane label="Graph" name="graph">Graph</el-tab-pane>
-        <el-tab-pane label="Task" name="task">Task</el-tab-pane>
+      <el-tabs v-model="activeName" type="card" @tab-click="handleActiveClick">
+        <el-tab-pane label="Graph" name="graph">
+          <el-row>
+              <div id="chartDAG" style="width:100%; height:400px;"></div>
+          </el-row>
+        </el-tab-pane>
+        <el-tab-pane label="Task" name="task">  <el-row>
+          <el-col :span="24">
+            <div class="grid-content bg-purple-light">
+              <el-table
+                :data="tableData"
+                style="width: 100%">
+                <el-table-column type="expand">
+                  <template slot-scope="props">
+                    <el-form label-position="left" inline class="demo-table-expand">
+                      <el-form-item label="商品名称">
+                        <span>{{ props.row.name }}</span>
+                      </el-form-item>
+                      <el-form-item label="所属店铺">
+                        <span>{{ props.row.shop }}</span>
+                      </el-form-item>
+                      <el-form-item label="商品 ID">
+                        <span>{{ props.row.id }}</span>
+                      </el-form-item>
+                      <el-form-item label="店铺 ID">
+                        <span>{{ props.row.shopId }}</span>
+                      </el-form-item>
+                      <el-form-item label="商品分类">
+                        <span>{{ props.row.category }}</span>
+                      </el-form-item>
+                      <el-form-item label="店铺地址">
+                        <span>{{ props.row.address }}</span>
+                      </el-form-item>
+                      <el-form-item label="商品描述">
+                        <span>{{ props.row.desc }}</span>
+                      </el-form-item>
+                    </el-form>
+                  </template>
+                </el-table-column>
+
+                <el-table-column label="Name"
+                                 prop="name">
+                  <template slot-scope="scope">
+                    <el-link :href="'https://localhost:8080/flowdetail/'+scope.$index" target="_blank">{{scope.row.name}}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  label="Description"
+                  prop="description">
+                </el-table-column>
+                <el-table-column
+                  label="Owner"
+                  prop="owner">
+                </el-table-column>
+                <el-table-column
+                  label="Status"
+                  prop="status">
+                </el-table-column>
+              </el-table>
+            </div>
+          </el-col>
+        </el-row>
+        </el-tab-pane>
         <el-tab-pane label="Execution" name="execution">Execution</el-tab-pane>
       </el-tabs>
     </el-row>
@@ -57,77 +118,19 @@
     <!--        <el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>-->
     <!--      </div>-->
     <!--    </el-dialog>-->
-    <el-row>
-      <el-col :span="24">
-        <div class="grid-content bg-purple-light">
-          <el-table
-            :data="tableData"
-            style="width: 100%">
-            <el-table-column type="expand">
-              <template slot-scope="props">
-                <el-form label-position="left" inline class="demo-table-expand">
-                  <el-form-item label="商品名称">
-                    <span>{{ props.row.name }}</span>
-                  </el-form-item>
-                  <el-form-item label="所属店铺">
-                    <span>{{ props.row.shop }}</span>
-                  </el-form-item>
-                  <el-form-item label="商品 ID">
-                    <span>{{ props.row.id }}</span>
-                  </el-form-item>
-                  <el-form-item label="店铺 ID">
-                    <span>{{ props.row.shopId }}</span>
-                  </el-form-item>
-                  <el-form-item label="商品分类">
-                    <span>{{ props.row.category }}</span>
-                  </el-form-item>
-                  <el-form-item label="店铺地址">
-                    <span>{{ props.row.address }}</span>
-                  </el-form-item>
-                  <el-form-item label="商品描述">
-                    <span>{{ props.row.desc }}</span>
-                  </el-form-item>
-                </el-form>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="Name"
-                             prop="name">
-              <template slot-scope="scope">
-                <el-link :href="'https://localhost:8080/flowdetail/'+scope.$index" target="_blank">{{scope.row.name}}
-                </el-link>
-              </template>
-            </el-table-column>
-            <el-table-column
-              label="Description"
-              prop="description">
-            </el-table-column>
-            <el-table-column
-              label="Owner"
-              prop="owner">
-            </el-table-column>
-            <el-table-column
-              label="Status"
-              prop="status">
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-col>
-    </el-row>
 
 
   </section>
 </template>
 
 <script>
+  import echarts from 'echarts'
   export default {
     data() {
       return {
         flowName: 'test_run',
-        visibility: 'Personal',
-        filters: {
-          name: ''
-        },
+        activeName:'graph',
+        chartDAG:null,
         tableData: [{
           id: '12987122',
           name: '好滋好味鸡蛋仔',
@@ -231,10 +234,112 @@
           //   }
           // });
         });
+      },
+      drawDAGChart(){
+        this.chartDAG=echarts.init(document.getElementById('chartDAG'))
+        this.chartDAG.setOption({
+          title: {
+            text: 'Graph 简单示例'
+          },
+          tooltip: {},
+          animationDurationUpdate: 1500,
+          animationEasingUpdate: 'quinticInOut',
+          series : [
+            {
+              type: 'graph',
+              layout: 'none',
+              symbolSize: 50,
+              roam: true,
+              label: {
+                normal: {
+                  show: true
+                }
+              },
+              edgeSymbol: ['circle', 'arrow'],
+              edgeSymbolSize: [4, 10],
+              edgeLabel: {
+                normal: {
+                  textStyle: {
+                    fontSize: 20
+                  }
+                }
+              },
+              data: [{
+                name: 'A',
+                x: 100,
+                y: 100
+              }, {
+                name: 'C',
+                x: 100,
+                y: 200
+              }, {
+                name: 'B',
+                x: 200,
+                y: 200
+              }, {
+                name: 'E',
+                x: 300,
+                y: 200
+              },{
+                name:'D',
+                x:100,
+                y:300
+              },{
+                name:'F',
+                x:200,
+                y:300
+              },{
+                name:'H',
+                x:100,
+                y:400
+              }],
+              // links: [],
+              links: [{
+                source: 'A',
+                target: 'C',
+                // symbolSize: [5, 20],
+              }, {
+                source: 'A',
+                target: 'B',
+              }, {
+                source: 'A',
+                target: 'E',
+              }, {
+                source: 'C',
+                target: 'D',
+              },{
+                source: 'B',
+                target: 'D',
+              },{
+                source: 'E',
+                target: 'F',
+              },{
+                source: 'D',
+                target: 'H',
+              },{
+                source: 'F',
+                target: 'H',
+              }],
+              lineStyle: {
+                normal: {
+                  opacity: 0.9,
+                  width: 2,
+                  curveness: 0
+                }
+              }
+            }
+          ]
+        });
+      },
+      handleActiveClick(tab,e){
+        if(tab.name==='graph')
+          this.drawDAGChart()
+        else
+          alert(tab.name)
       }
     },
-
     mounted: function () {
+      this.drawDAGChart()
     },
   }
 </script>
