@@ -152,9 +152,17 @@
     .text {
         font-size: 14px;
     }
+    .text1 {
+      font-size: 24px;
+      color:gray ;
+    }
     .item {
         margin-bottom: 12px;
         margin-left: 80px;
+    }
+    .item2 {
+      margin-top: 12px;
+      margin-bottom: 12px;
     }
 
 </style>
