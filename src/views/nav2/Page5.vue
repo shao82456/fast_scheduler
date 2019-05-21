@@ -31,61 +31,51 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="Task" name="task">  <el-row>
-          <el-col :span="24">
-            <div class="grid-content bg-purple-light">
+
               <el-table
                 :data="tableData"
-                style="width: 100%">
-                <el-table-column type="expand">
-                  <template slot-scope="props">
-                    <el-form label-position="left" inline class="demo-table-expand">
-                      <el-form-item label="商品名称">
-                        <span>{{ props.row.name }}</span>
-                      </el-form-item>
-                      <el-form-item label="所属店铺">
-                        <span>{{ props.row.shop }}</span>
-                      </el-form-item>
-                      <el-form-item label="商品 ID">
-                        <span>{{ props.row.id }}</span>
-                      </el-form-item>
-                      <el-form-item label="店铺 ID">
-                        <span>{{ props.row.shopId }}</span>
-                      </el-form-item>
-                      <el-form-item label="商品分类">
-                        <span>{{ props.row.category }}</span>
-                      </el-form-item>
-                      <el-form-item label="店铺地址">
-                        <span>{{ props.row.address }}</span>
-                      </el-form-item>
-                      <el-form-item label="商品描述">
-                        <span>{{ props.row.desc }}</span>
-                      </el-form-item>
-                    </el-form>
-                  </template>
+                style="width: 100%" stripe border>
+                <el-table-column type="index">
                 </el-table-column>
-
-                <el-table-column label="Name"
-                                 prop="name">
+                <el-table-column
+                  label="Name"
+                  width="180" prop="name">
                   <template slot-scope="scope">
-                    <el-link :href="'https://localhost:8080/flowdetail/'+scope.$index" target="_blank">{{scope.row.name}}
-                    </el-link>
+                    <el-popover trigger="hover" placement="top" title="Command">
+                      <p>{{ scope.row.command }}</p>
+                      <div slot="reference" class="name-wrapper">
+                        <el-tag type="success"> {{ scope.row.name }}</el-tag>
+                      </div>
+                    </el-popover>
                   </template>
                 </el-table-column>
                 <el-table-column
-                  label="Description"
-                  prop="description">
+                  label="description"
+                  width="180" prop="description">
                 </el-table-column>
                 <el-table-column
-                  label="Owner"
-                  prop="owner">
+                  label="Dependencies"
+                  width="360" prop="dependencies">
+                  <template slot-scope="scope">
+                    <el-tag
+                      v-for="d in scope.row.dependencies"
+                      :key="d">
+                      {{d}}
+                    </el-tag>
+                  </template>
                 </el-table-column>
-                <el-table-column
-                  label="Status"
-                  prop="status">
+                <el-table-column label="操作">
+                  <template slot-scope="scope">
+                    <el-button
+                      size="mini"
+                      @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                    <el-button
+                      size="mini"
+                      type="danger"
+                      @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                  </template>
                 </el-table-column>
               </el-table>
-            </div>
-          </el-col>
         </el-row>
         </el-tab-pane>
         <el-tab-pane label="Execution" name="execution">Execution</el-tab-pane>
@@ -132,37 +122,25 @@
         activeName:'graph',
         chartDAG:null,
         tableData: [{
-          id: '12987122',
-          name: '好滋好味鸡蛋仔',
-          category: '江浙小吃、小吃零食',
-          desc: '荷兰优质淡奶，奶香浓而不腻',
-          address: '上海市普陀区真北路',
-          shop: '王小虎夫妻店',
-          shopId: '10333'
-        }, {
-          id: '12987123',
-          name: '好滋好味鸡蛋仔',
-          category: '江浙小吃、小吃零食',
-          desc: '荷兰优质淡奶，奶香浓而不腻',
-          address: '上海市普陀区真北路',
-          shop: '王小虎夫妻店',
-          shopId: '10333'
-        }, {
-          id: '12987125',
-          name: '好滋好味鸡蛋仔',
-          category: '江浙小吃、小吃零食',
-          desc: '荷兰优质淡奶，奶香浓而不腻',
-          address: '上海市普陀区真北路',
-          shop: '王小虎夫妻店',
-          shopId: '10333'
-        }, {
-          id: '12987126',
-          name: '好滋好味鸡蛋仔',
-          category: '江浙小吃、小吃零食',
-          desc: '荷兰优质淡奶，奶香浓而不腻',
-          address: '上海市普陀区真北路',
-          shop: '王小虎夫妻店',
-          shopId: '10333'
+          name: 'checkHDFSPath1',
+          command:'bash checkHdfs.sh path1',
+          description:'check job',
+          dependencies: []
+        },{
+          name: 'checkHDFSPath2',
+          command:'bash checkHdfs.sh path2',
+          description:'check job',
+          dependencies: []
+        },{
+          name: 'powerkeeper',
+          command:'bash run_powerkeeper.sh',
+          description:'spark job',
+          dependencies: ['checkHDFSPath1','checkHDFSPath2']
+        },{
+          name: 'textToMysql',
+          command: 'bash datatransport.sh path1 tabl1 date1',
+          description:'datatrans job',
+          dependencies:['powerkeeper']
         }]
       }
     },

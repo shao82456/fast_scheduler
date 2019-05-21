@@ -15,9 +15,9 @@
         </el-form>
       </el-col>
       <el-col :span="6">
-        <el-form :inline="true" label-position="right">
+        <el-form :inline="true">
           <el-form-item label="Visibility">
-            <el-select   v-model="visibility" placeholder="Permision">
+            <el-select   v-model="visibility" placeholder="Permision" value="Personal">
               <el-option label="Personal" value="Personal"></el-option>
               <el-option label="Group" value="Group"></el-option>
               <el-option label="All" value="All"></el-option>
