@@ -31,11 +31,71 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="Task" name="task">  <el-row>
-
-              <el-table
-                :data="tableData"
+          <el-dialog title="Add Task" :visible.sync="addFormVisible">
+            <el-form :model="addForm" :rules="addFormRules" ref="addForm">
+              <el-form-item label="Name" prop="name">
+                <el-input v-model="addForm.name" ></el-input>
+              </el-form-item>
+              <el-form-item label="Command" prop="command">
+                <el-input v-model="addForm.command"></el-input>
+              </el-form-item>
+              <el-form-item label="Description" prop="description"  >
+                <el-input type="textarea" v-model="addForm.description"></el-input>
+              </el-form-item>
+              <el-form-item label="Dependencies" prop="dependencies">
+                <el-select
+                  v-model="addForm.dependencies"
+                  multiple
+                  placeholder="请选择" >
+                  <el-option
+                    v-for="item in tasks"
+                    :key="item.id"
+                    :value="item.name">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click.native="addLoading=false,addFormVisible=false">取消</el-button>
+              <el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>
+            </div>
+          </el-dialog>
+          <el-dialog title="Edit Task" :visible.sync="editFormVisible">
+            <el-form :model="editForm" :rules="addFormRules" ref="editForm">
+              <el-form-item label="Name" prop="name">
+                <el-input v-model="editForm.name" ></el-input>
+              </el-form-item>
+              <el-form-item label="Command" prop="command">
+                <el-input v-model="editForm.command"></el-input>
+              </el-form-item>
+              <el-form-item label="Description" prop="description"  >
+                <el-input type="textarea" v-model="editForm.description"></el-input>
+              </el-form-item>
+              <el-form-item label="Dependencies" prop="dependencies">
+                <el-select
+                  v-model="editForm.dependencies"
+                  multiple
+                  placeholder="请选择" >
+                  <el-option
+                    v-for="item in pretasks"
+                    :label="item.name"
+                    :key="item.id"
+                    :value="item.id">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click.native="editFormVisible = false,editLoading=false">取消</el-button>
+              <el-button type="primary" @click.native="editSubmit" :loading="editLoading">提交</el-button>
+            </div>
+          </el-dialog>
+          <el-table
+                :data="tasks"
                 style="width: 100%" stripe border>
-                <el-table-column type="index">
+                <el-table-column
+                  label="#"
+                  width="60" prop="id">
                 </el-table-column>
                 <el-table-column
                   label="Name"
@@ -60,22 +120,23 @@
                     <el-tag
                       v-for="d in scope.row.dependencies"
                       :key="d">
-                      {{d}}
+                      {{tasks[d-1].name}}
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作">
+                <el-table-column label="Operation">
                   <template slot-scope="scope">
-                    <el-button
-                      size="mini"
-                      @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
-                    <el-button
-                      size="mini"
-                      type="danger"
-                      @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                    <el-button plain type="primary" size="small" icon="el-icon-edit" @click="handleEdit(scope.$index, scope.row)"></el-button>
+                    <el-button plain type="danger" size="small" icon="el-icon-delete" @click="handleDelete(scope.$index, scope.row)"></el-button>
                   </template>
                 </el-table-column>
               </el-table>
+          <el-row class="toolbar">
+            <el-col :span="6" :offset="18">
+                <el-button type="primary" @click="handleAdd">Add</el-button>
+                <el-button type="success" @click="handleSave">Save</el-button>
+            </el-col>
+          </el-row>
         </el-row>
         </el-tab-pane>
         <el-tab-pane label="Execution" name="execution">Execution</el-tab-pane>
@@ -115,36 +176,147 @@
 
 <script>
   import echarts from 'echarts'
+  import {httpSaveTask} from '../../api/api';
   export default {
     data() {
       return {
         flowName: 'test_run',
         activeName:'graph',
         chartDAG:null,
-        tableData: [{
+        tasks: [{
+          id:1,
           name: 'checkHDFSPath1',
           command:'bash checkHdfs.sh path1',
           description:'check job',
-          dependencies: []
+          dependencies: [],
         },{
+          id:2,
           name: 'checkHDFSPath2',
           command:'bash checkHdfs.sh path2',
           description:'check job',
-          dependencies: []
+          dependencies: [],
         },{
+          id:3,
           name: 'powerkeeper',
           command:'bash run_powerkeeper.sh',
           description:'spark job',
-          dependencies: ['checkHDFSPath1','checkHDFSPath2']
+          dependencies: [1,2,5],
         },{
+          id:4,
           name: 'textToMysql',
           command: 'bash datatransport.sh path1 tabl1 date1',
           description:'datatrans job',
-          dependencies:['powerkeeper']
-        }]
+          dependencies:[3],
+        },
+          {
+            id:5,
+            name: 'test',
+            command: 'bash test',
+            description:'test job',
+            dependencies:[],
+          }],
+        taskHeight:[],
+        addFormVisible: false,//新增界面是否显示
+        addLoading: false,
+        addFormRules: {
+          name: [
+            {required: true, message: '名称为空', trigger: 'blur'}
+          ],
+          command: [
+            {required: true, message: '执行命令为空', trigger: 'blur'}
+          ],
+        },
+        //新增界面数据
+        addForm: {
+          id:-1,
+          name: '',
+          command: '',
+          description: ' ',
+          dependencies:[],
+        },
+        editFormVisible: false,//新增界面是否显示
+        editLoading: false,
+        //编辑界面数据
+        editForm: {
+          id:'',
+          name: '',
+          command: '',
+          description: ' ',
+          dependencies:[]
+        },
       }
     },
+    computed: {
+      pretasks:function () {
+        var currentTaskId=this.editForm.id
+        return this.tasks.filter(function (item) {
+          return item.id !== currentTaskId
+        })
+      },
+      dagInfo:function () {
+        //计算结点高度，从而得出纵坐标
+        var height=new Array(this.tasks.length+1)
+        var temp_dd=new Array(this.tasks.length+1)
+        var remainTask=new Set()
 
+        for(var j = 1,len = height.length; j < len; j++) {
+          height[j] = 0
+          temp_dd[j]=new Set(this.tasks[j-1].dependencies)
+          remainTask.add(j)
+        }
+        while (remainTask.size>0){
+          for(var j = 1,len = temp_dd.length; j < len; j++){
+            if(temp_dd[j].size===0){
+              let taskId=j
+              for(var k=1,lenk=temp_dd.length;k<lenk;k++){
+                if(temp_dd[k].has(taskId)){
+                  temp_dd[k].delete(taskId);
+                  height[k]=Math.max(height[k],height[j]+1)
+                }
+              }
+              remainTask.delete(j)
+            }
+          }
+        }
+        //获取节点横纵坐标
+        var xmap=new Map()
+        var datas=new Array(this.tasks.length)
+        for(var j = 0,len = this.tasks.length; j < len; j++) {
+          var task=this.tasks[j]
+          var hy=height[task.id]
+          var hx=-1
+          if(xmap.has(hy)){
+            hx=xmap.get(hy)+200
+          }else{
+            hx=0
+          }
+          xmap.set(hy,hx)
+          datas[j]={
+            name:task.name,
+            x:hx,
+            y:hy*200
+          }
+        }
+        //获取连线
+        var links=[]
+        for(let index in this.tasks){
+          var curTask=this.tasks[index]
+          var ds=curTask.dependencies
+          for(let index in ds){
+            links.push({
+              source:this.tasks[ds[index]-1].name,
+              target:curTask.name
+            })
+          }
+        }
+        console.log(datas)
+        console.log(links)
+        return {
+          data:datas,
+          link:links
+        }
+      }
+    },
     methods: {
       getFlows() {
         // let para = {
@@ -213,11 +385,13 @@
           // });
         });
       },
+      getTask(){
+      },
       drawDAGChart(){
         this.chartDAG=echarts.init(document.getElementById('chartDAG'))
         this.chartDAG.setOption({
           title: {
-            text: 'Graph 简单示例'
+            text:this.flowName
           },
           tooltip: {},
           animationDurationUpdate: 1500,
@@ -242,62 +416,9 @@
                   }
                 }
               },
-              data: [{
-                name: 'A',
-                x: 100,
-                y: 100
-              }, {
-                name: 'C',
-                x: 100,
-                y: 200
-              }, {
-                name: 'B',
-                x: 200,
-                y: 200
-              }, {
-                name: 'E',
-                x: 300,
-                y: 200
-              },{
-                name:'D',
-                x:100,
-                y:300
-              },{
-                name:'F',
-                x:200,
-                y:300
-              },{
-                name:'H',
-                x:100,
-                y:400
-              }],
+              data: this.dagInfo.data,
               // links: [],
-              links: [{
-                source: 'A',
-                target: 'C',
-                // symbolSize: [5, 20],
-              }, {
-                source: 'A',
-                target: 'B',
-              }, {
-                source: 'A',
-                target: 'E',
-              }, {
-                source: 'C',
-                target: 'D',
-              },{
-                source: 'B',
-                target: 'D',
-              },{
-                source: 'E',
-                target: 'F',
-              },{
-                source: 'D',
-                target: 'H',
-              },{
-                source: 'F',
-                target: 'H',
-              }],
+              links:this.dagInfo.link,
               lineStyle: {
                 normal: {
                   opacity: 0.9,
@@ -310,14 +431,88 @@
         });
       },
       handleActiveClick(tab,e){
-        if(tab.name==='graph')
-          this.drawDAGChart()
-        else
-          alert(tab.name)
+        // if(tab.name==='graph')
+        //   this.drawDAGChart()
+      },
+      handleEdit: function (index, row) {
+        this.editFormVisible = true;
+        this.editForm = Object.assign({}, row);
+      },
+      handleDelete: function (index, row) {
+        this.$confirm('Are you sure you want to delete this Task?', 'Delete Task', {
+          type: 'warning'
+        }).then(() => {
+          var currentTaskId=row.id
+          //获取新旧Task id映射
+          var newTaskIdMap=new Array(this.tasks.length+1)
+          for(var j = 1,len = newTaskIdMap.length; j < len; j++){
+            if(j<currentTaskId)
+              newTaskIdMap[j]=j
+            else if(j===currentTaskId)
+              newTaskIdMap[j]=-1
+            else
+              newTaskIdMap[j]=j-1
+          }
+          //更新Task信息
+          this.tasks.splice(currentTaskId-1,1)
+          for(var j=0,len=this.tasks.length;j<len;j++){
+            var currentTask=this.tasks[j]
+            currentTask.id=newTaskIdMap[currentTask.id]
+            var dd=currentTask.dependencies
+            for(var k=0,lenk=dd.length;k<lenk;k++){
+              var taskId=dd[k]
+              if(newTaskIdMap[taskId]===-1)
+                  dd.splice(k,1)
+                else
+                  dd.splice(k,1,newTaskIdMap[taskId])
+            }
+          }
+          // console.log("task del done")
+        }).catch(() => {
+
+        });
+      },
+      handleAdd: function () {
+        this.addFormVisible = true;
+      },
+      handleSave:function () {
+        this.$confirm('Are you sure you want to save the change？', 'Save Change', {}).then(() => {
+            let para = Object.assign({}, this.tasks)
+            httpSaveTask(para).then(res => {
+              let {code, msg} = res.data
+              if (code !== 200) {
+                this.$message({
+                  message: msg,
+                  type: 'error'
+                });
+              }
+              else {
+                this.$message({
+                  message: 'save success',
+                  type: 'success'
+                });
+                this.getTask()
+                this.drawDAGChart()
+              }
+            })
+      })},
+      addSubmit:function () {
+        this.addForm.id=this.tasks.length+1
+        this.tasks.push(this.addForm)
+        this.addForm = {
+        }
+        this.addFormVisible=false
+      },
+      editSubmit:function () {
+        this.tasks.splice(this.editForm.id-1,1,this.editForm)
+        this.editForm={}
+        this.editFormVisible=false
       }
     },
     mounted: function () {
+      this.getTask()
       this.drawDAGChart()
+      this.getTask()
     },
   }
 </script>

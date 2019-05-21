@@ -175,5 +175,19 @@ export default {
         }, 500);
       });
     });
+
+    mock.onPost('/flow/updateTask').reply(config => {
+      let { task } = JSON.parse(config.data);
+      alert(config.data);
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve([200, {
+            code: 200,
+            msg: '新增成功'
+          }]);
+        }, 500);
+      });
+    });
+
   }
 };

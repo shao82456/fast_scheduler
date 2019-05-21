@@ -20,3 +20,5 @@ export const addTask = params => { return axios.post(`${base}/task/add`, params)
 export const enableTask= params => { return axios.get(`${base}/task/cron/${params}`); };
 
 export const cronTime= params => { return axios.get(`${base}/help/cronTime`,{ params: params }); };
+
+export const httpSaveTask=params => { return axios.post(`${base}/flow/updateTask`, params); };
