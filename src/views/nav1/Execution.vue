@@ -144,9 +144,9 @@
     width: 100%;
     float: left;
   }
-  /*.chart div {
+  .chart div {
       height: 400px;
       float: left;
-  }*/
+  }
 
 </style>

@@ -145,24 +145,14 @@
     .el-table .unused-row {
         /*background: gray;*/
     }
-
     .el-table .used-row {
         background: #f0f9eb;
     }
     .text {
         font-size: 14px;
     }
-    .text1 {
-      font-size: 24px;
-      color:gray ;
-    }
     .item {
-        margin-bottom: 12px;
-        margin-left: 80px;
-    }
-    .item2 {
-      margin-top: 12px;
-      margin-bottom: 12px;
+      padding: 18px 0;
     }
 
 </style>
@@ -170,7 +160,7 @@
 <script>
     import FileUpload from 'vue-upload-component'
     //import NProgress from 'nprogress'
-    import {getUserListPage, removeUser, batchRemoveUser, editTask, addTask,enableTask,cronTime} from '../../api/api';
+        import {getUserListPage, removeUser, batchRemoveUser, editTask, addTask,enableTask,cronTime} from '../../api/api';
 
     export default {
         components: {

@@ -1,13 +1,13 @@
 import Login from '../views/Login.vue'
 import NotFound from '../views/404.vue'
 import Home from '../views/Home.vue'
-import Main from '../views/Main.vue'
 import Table from '../views/nav1/Table.vue'
-import Form from '../views/nav1/Form.vue'
 import Execution from '../views/nav1/Execution'
 
-import Page4 from '../views/nav2/Page4.vue'
-import Page5 from '../views/nav2/Page5.vue'
+import Flows from '../views/nav2/Flows.vue'
+import Detail from '../views/nav2/Detail.vue'
+import Log from '../views/nav2/Log.vue'
+
 import Page6 from '../views/nav3/Page6.vue'
 import echarts from '../views/charts/echarts.vue'
 
@@ -26,46 +26,45 @@ let routes = [
     },
     //{ path: '/main', component: Main },
     {
-        path: '/',
+        path: '/task',
         component: Home,
-        name: '导航一',
+        name: 'Task',
         iconCls: 'el-icon-message',//图标样式class
         children: [
-            { path: '/main', component: Main, name: '主页', hidden: true },
-            { path: '/table', component: Table, name: 'Table' },
-            { path: '/form', component: Form, name: 'Form' },
-            { path: '/execution', component: Execution, name: '记录' },
+            { path: '/task/list', component: Table, name: 'Table' },
+            { path: '/task/execution', component: Execution, name: '记录' },
         ]
     },
     {
-        path: '/',
+        path: '/flow',
         component: Home,
-        name: '导航二',
+        name: 'Flow',
         iconCls: 'fa fa-id-card-o',
         children: [
-            { path: '/page4', component: Page4, name: '页面4' },
-            { path: '/page5', component: Page5, name: '页面5' }
+            { path: '/flow/list', component: Flows, name: 'Flows' },
+            { path: '/flow/detail', component: Detail, name: 'Detail' },
+            { path: '/log', component: Log, name: 'Log' }
         ]
     },
-    {
-        path: '/',
-        component: Home,
-        name: '',
-        iconCls: 'fa fa-address-card',
-        leaf: true,//只有一个节点
-        children: [
-            { path: '/page6', component: Page6, name: '导航三' }
-        ]
-    },
-    {
-        path: '/',
-        component: Home,
-        name: 'Charts',
-        iconCls: 'fa fa-bar-chart',
-        children: [
-            { path: '/echarts', component: echarts, name: 'echarts' }
-        ]
-    },
+    // {
+    //     path: '/',
+    //     component: Home,
+    //     name: '',
+    //     iconCls: 'fa fa-address-card',
+    //     leaf: true,//只有一个节点
+    //     children: [
+    //         { path: '/page6', component: Page6, name: '导航三' }
+    //     ]
+    // },
+    // {
+    //     path: '/',
+    //     component: Home,
+    //     name: 'Charts',
+    //     iconCls: 'fa fa-bar-chart',
+    //     children: [
+    //         { path: '/echarts', component: echarts, name: 'echarts' }
+    //     ]
+    // },
     {
         path: '*',
         hidden: true,

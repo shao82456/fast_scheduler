@@ -8,11 +8,13 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import store from './vuex/store'
 import Vuex from 'vuex'
+import locale from 'element-ui/lib/locale/lang/en'
+import fontawesome from '@fortawesome/fontawesome'
 
-
-Vue.use(ElementUI)
+Vue.use(ElementUI, { locale })
 Vue.use(VueRouter)
 Vue.use(Vuex)
+Vue.use(fontawesome)
 
 import Mock from './mock'
 Mock.bootstrap();
