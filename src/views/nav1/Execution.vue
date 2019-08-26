@@ -4,19 +4,23 @@
       <div id="chartLine" style="width:100%;height:400px;"></div>
     </el-row>
     <el-row >
-      <el-table :data="executions" highlight-current-row v-loading="listLoading"
-                :row-style="row_style" style="left: 10%; width: 100%;"  border stripe @row-click="log_link">
-        <el-table-column  prop="user" label="用户" width="120"/>
-        <el-table-column prop="startTime" label="开始时间" width="240"  sortable/>
-        <el-table-column prop="endTime" label="结束时间" width="240"  sortabl/>
-        <el-table-column prop="elapsed" label="时间" width="120" sortable/>
-        <el-table-column prop="status" label="状态"  :formatter="status_f" width="140" align="center">
-          <template slot-scope="scope">
-            <div  style="background: #66CD00; font-size: 16px;"  v-show="scope.row.status">success</div>
-            <div  style="background: #CD2626; font-size: 16px;"   v-show="(!scope.row.status)">fail</div>
+      <el-table :data="executions" highlight-current-row v-loading="listLoading" border stripe>
+        <el-table-column label="执行记录" sortable>
+          <template slot-scope="props">
+            <router-link :to="logpath(props.row.id)" style="text-decoration:none;"><el-link>{{props.row.id}}</el-link></router-link>
           </template>
         </el-table-column>
-        <el-table-column prop="descript" label="描述" width="360"/>
+        <el-table-column  prop="user" label="用户"/>
+        <el-table-column prop="beginTime" label="开始时间"   sortable/>
+        <el-table-column prop="endTime" label="结束时间" sortabl/>
+        <el-table-column prop="value" label="时间"  :formatter="secondsFormatter" sortable/>
+        <el-table-column prop="status" label="状态"  align="center">
+          <template slot-scope="scope">
+            <div  style="background: #66CD00; font-size: 16px;"   v-show="scope.row.status===0">Success</div>
+            <div  style="background: #CD2626; font-size: 16px;"   v-show="scope.row.status===1">Fail</div>
+            <div  style="background: #20a0ff; font-size: 16px;"   v-show="scope.row.status===2">Running</div>
+          </template>
+        </el-table-column>
       </el-table>
       <el-col :span="24" class="toolbar">
         <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="10"
@@ -34,6 +38,8 @@
   export default {
     data() {
       return {
+        taskId:2,
+        taskName:'',
         chartLine: null,
         executions:[],
         total: 0,
@@ -53,7 +59,7 @@
         this.chartLine.setOption(
           {
             title:{
-              text:'test_run_cron'+'　近期执行情况'
+              text:this.taskName+'　近期执行情况'
             },
             grid:{
               left:'10%',
@@ -85,8 +91,10 @@
               itemStyle : {
                 normal : {
                   color:function (params) {
-                    if(params.data.status)
+                    if(params.data.status==0)
                       return '#66CD00'
+                    else if(params.data.status===2)
+                      return '#20a0ff'
                     else
                       return '#CD2626'
                   },
@@ -104,6 +112,7 @@
       },
       getExecutions(){
         let para={
+          taskId:this.taskId,
           pageNum:this.page
         }
         this.listLoading=true
@@ -114,26 +123,30 @@
 
           this.begins=[]
           this.executions.map(e=>{
-            this.begins.push(e.startTime.substr(0,10))
+            this.begins.push(e.beginTime.substr(0,10))
           })
           this.drawLineChart()
         })
       },
-      status_f(row,index){
-        if (row.status)
-          return 'success'
-        else
-          return 'fail'
+      secondsFormatter(row){
+        var value=row.value
+        if(value>3600){
+          var c= Math.floor(value/3600)
+          var d=value%3600
+          return c+' h '+Math.floor(d/60)+' m '+d%60+' s'
+        }else if(value>60){
+          return Math.floor(value/60)+' m '+value%60+' s'
+        }else
+          return value+' s'
       },
-      row_style({ row, rowIndex }){
-          return 'color:#1F1F1F;'
-      },
-      log_link(){
-
+      logpath(eid){
+        return '/log?eid=t'+eid+'&name='+this.taskName
       }
     },
 
     mounted: function () {
+      this.taskId=this.$route.query.taskId
+      this.taskName=this.$route.query.taskName
       this.getExecutions()
     },
   }

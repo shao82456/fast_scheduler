@@ -17,71 +17,90 @@
 
         <!--列表-->
         <el-table :data="tasks" highlight-current-row v-loading="listLoading" @selection-change="selsChange"
-                  style="width: 100%;"  :row-class-name="table_row__class" @row-click="task_link">
-            <el-table-column prop="uid" label="用户" width="120" sortable>
-            </el-table-column>
-            <el-table-column prop="name" label="名称" width="240"  sortable>
-            </el-table-column>
+                  style="width: 100%;"  :row-class-name="table_row__class">
+          <el-table-column type="expand">
+            <template slot-scope="props">
+              <div class="text" style="color:gray" >
+                {{props.row.description}}
+              </div>
+              <div class="text" style="color:gray" >
+                <span style="color: black">Created on</span> {{props.row.createTime}}<br/>
+                <span style="color: black">Modified on</span> {{props.row.updateTime}}
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="名称"
+                           prop="name" sortable>
+            <template slot-scope="scope">
+              <router-link :to="'/task/execution?taskId='+scope.row.id+'&taskName='+scope.row.name" style="text-decoration:none;"><el-link>{{scope.row.name}}</el-link></router-link>
+            </template>
+          </el-table-column>
+          <el-table-column prop="userName" label="用户"  sortable>
+          </el-table-column>
+          <el-table-column
+            label="执行计划">
+            <template slot-scope="scope">
+              <div v-show="scope.row.status===0">{{scope.row.cron}}</div>
+              <div v-show="scope.row.status!==0">未调度</div>
+            </template>
+          </el-table-column>
 
-          <el-table-column prop="status" label="状态" width="120" :formatter="status_info" sortable>
-            </el-table-column>
-            <el-table-column prop="command" label="命令" width="360" sortable>
-            </el-table-column>
-            <el-table-column prop="cron" label="执行计划" width="120" sortable>
-            </el-table-column>
-            <el-table-column prop="descript" label="描述" min-width="240" sortable>
-            </el-table-column>
 
-            <el-table-column label="操作" width="240">
+
+          <el-table-column label="操作" min-width="%30">
                 <template slot-scope="scope">
-                    <el-button type="success" size="mini" :disabled="status_boolean(scope.row.status)" @click="handleEnable(scope.$index, scope.row)">启用</el-button>
-                    <el-button type="primary" size="mini" @click="handleUpload(scope.$index, scope.row)">上传<i class="el-icon-upload el-icon--right"></i></el-button>
+                  <el-button-group>
+                    <el-button type="success" size="mini"  icon="el-icon-time" @click="handleSchedule(scope.$index, scope.row)" v-show="scope.row.status!==0"></el-button>
+                    <el-button type="warning" size="mini" icon="el-icon-circle-close" @click="handleUnSchedule(scope.$index, scope.row)" v-show="scope.row.status===0"></el-button>
+                    <el-button type="primary" size="mini" @click="handleUpload(scope.$index, scope.row)"><i class="el-icon-upload el-icon--right"></i></el-button>
                     <el-button type="primary" size="mini" icon="el-icon-edit" @click="handleEdit(scope.$index, scope.row)"></el-button>
-<!--                    <el-button type="danger" size="small" @click="handleDel(scope.$index, scope.row)">删除</el-button>-->
-                </template>
+                    <el-button type="danger" size="mini" icon="el-icon-delete" @click="handleDel(scope.$index, scope.row)"></el-button>
+                  </el-button-group>
+                 </template>
             </el-table-column>
+
         </el-table>
+      <el-col :span="24" class="toolbar">
+        <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="12"
+                       :total="total" style="float:right;">
+        </el-pagination>
+      </el-col>
 
-        <!--工具条-->
-        <el-col :span="24" class="toolbar">
-            <el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button>
-            <el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="12"
-                           :total="total" style="float:right;">
-            </el-pagination>
-        </el-col>
-
-        <!--上传界面-->
-        <el-dialog title="上传" :visible.sync="uploadFormVisible" :close-on-click-modal="true" width="20%" @close="afterUpload">
-            <ul>
-                <li v-for="(file, index) in files" :key="file.id">
-                    <span>{{file.name}}</span>
-                    <span>{{file.size | formatSize1}}MB</span>
-                    <span v-if="file.error">{{file.error}}</span>
-                    <span v-else-if="file.success">success</span>
-                    <span v-else-if="file.active">uploading</span>
-                    <span v-else-if="file.active">uploading</span>
-                    <span v-else></span>
-                </li>
-            </ul>
+      <el-dialog title="上传任务程序包" :visible.sync="uploadFormVisible"  @close="afterUpload" width="30%">
+        <ul>
+          <li v-for="(file, index) in files" :key="file.id">
+            <span>{{file.name}}</span>
+            <span>{{file.size | formatSize1}}MB</span>
+            <span v-if="file.error">{{file.error}}</span>
+            <span v-else-if="file.success">success</span>
+            <span v-else-if="file.active">uploading</span>
+            <span v-else-if="file.active">uploading</span>
+            <span v-else></span>
+          </li>
+        </ul>
+        <el-row>
+          <el-col :span="18">
             <file-upload
-                    class="btn btn-primary"
-                    :post-action="uploadpath"
-                    accept="application/zip"
-                    v-model="files"
-                    @input-filter="inputFilter"
-                    @input-file="inputFile"
-                    ref="upload">
-                <i class="fa fa-plus"></i>
-                选择文件
+              class="btn btn-primary"
+              :post-action="'/task/upload/' + this.uploadForm.id"
+              accept="application/zip"
+              v-model="files"
+              ref="upload">
+              选择文件<i
+              class="el-icon-files el-icon--right"></i>
             </file-upload>
-            <el-button size="small" class="fa fa-arrow-up" v-if="!$refs.upload || !$refs.upload.active"
-                       @click.prevent="$refs.upload.active = true" style="margin-left:70%">
-                上传
+          </el-col>
+          <el-col :span="6">
+            <el-button size="small" v-if="!$refs.upload || !$refs.upload.active"
+                       @click.prevent="$refs.upload.active = true">
+              上传<i class="el-icon-upload2 el-icon--right"></i>
             </el-button>
-        </el-dialog>
+          </el-col>
+        </el-row>
+      </el-dialog>
 
         <!--编辑界面-->
-        <el-dialog title="编辑" :visible.sync="editFormVisible" @close="next5Times=[],next5Visible=false">
+        <el-dialog title="编辑" :visible.sync="editFormVisible">
             <el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
                 <el-form-item label="名称" prop="name">
                     <el-input v-model="editForm.name" auto-complete="off"></el-input>
@@ -89,30 +108,40 @@
                 <el-form-item label="命令" prop="command">
                     <el-input v-model="editForm.command" auto-complete="off"></el-input>
                 </el-form-item>
-                <el-form-item label="执行计划" prop="cron">
-                    <el-input v-model="editForm.cron" auto-complete="off"></el-input>
-                </el-form-item>
-<!--                				<el-form-item label="立即生效">-->
-<!--                					<el-checkbox v-model="editForm.status_use" checked >启用</el-checkbox>-->
-<!--                				</el-form-item>-->
                 <el-form-item label="描述">
-                    <el-input type="textarea" v-model="editForm.descript"></el-input>
+                    <el-input type="textarea" v-model="editForm.description"></el-input>
                 </el-form-item>
             </el-form>
-          <div v-show="next5Visible">
-            <div class="text item">近期执行时间</div>
-            <div v-for="item in next5Times" :key="item" class="text item">
-              {{item }}
-            </div>
-          </div>
             <div slot="footer" class="dialog-footer">
                 <el-button @click.native="editFormVisible = false,editLoading=false">取消</el-button>
                 <el-button type="primary" @click.native="editSubmit" :loading="editLoading">提交</el-button>
             </div>
         </el-dialog>
 
+      <el-dialog title="调度任务" :visible.sync="cronFormVisible" @close="next5Times=[],next5Visible=false">
+        <el-form :model="cronForm" :rules="cronFormRules" ref="cronForm">
+          <el-form-item label="名称" prop="name">
+            <el-input v-model="cronForm.name" :disabled="true"></el-input>
+          </el-form-item>
+          <el-form-item label="执行计划" prop="cron">
+            <el-input v-model="cronForm.cron" auto-complete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="近期调度时间"　v-if="next5Visible">
+            <br/>
+            <div v-for="item in next5Times" :key="item" class="text item1" style="margin-left: 5%;color: green">
+              {{item }}
+            </div>
+          </el-form-item>
+        </el-form>
+
+        <div slot="footer" class="dialog-footer">
+          <el-button @click.native="cronFormVisible = false,cronLoading=false">Cancel</el-button>
+          <el-button type="primary" @click.native="cronSubmit" :loading="cronLoading">Submit</el-button>
+        </div>
+      </el-dialog>
+
         <!--新增界面-->
-        <el-dialog title="新增" :visible.sync="addFormVisible" @close="next5Times=[],next5Visible=false">
+        <el-dialog title="新增" :visible.sync="addFormVisible">
             <el-form :model="addForm" :rules="addFormRules" ref="addForm" label-width="80px">
                 <el-form-item label="名称" prop="name">
                     <el-input v-model="addForm.name" ></el-input>
@@ -120,19 +149,10 @@
                 <el-form-item label="命令" prop="command">
                     <el-input v-model="addForm.command"></el-input>
                 </el-form-item>
-                <el-form-item label="执行计划" prop="cron"  >
-                    <el-input v-model="addForm.cron" placeholder="0 0 8 * * ?" clearable></el-input>
-                </el-form-item>
                 <el-form-item label="描述">
-                    <el-input type="textarea" v-model="addForm.descript"></el-input>
+                    <el-input type="textarea" v-model="addForm.description"></el-input>
                 </el-form-item>
             </el-form>
-            <div v-show="next5Visible">
-                <div class="text item">近期执行时间</div>
-                <div v-for="item in next5Times" :key="item" class="text item">
-                    {{item }}
-                </div>
-            </div>
             <div slot="footer" class="dialog-footer">
                 <el-button @click.native="addLoading=false,addFormVisible=false">取消</el-button>
                 <el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>
@@ -146,7 +166,7 @@
         /*background: gray;*/
     }
     .el-table .used-row {
-        background: #f0f9eb;
+        background:	#FAFAFA;
     }
     .text {
         font-size: 14px;
@@ -154,13 +174,16 @@
     .item {
       padding: 18px 0;
     }
+    .item1 {
+      padding: 5px 0;
+    }
 
 </style>
 
 <script>
     import FileUpload from 'vue-upload-component'
     //import NProgress from 'nprogress'
-        import {getUserListPage, removeUser, batchRemoveUser, editTask, addTask,enableTask,cronTime} from '../../api/api';
+    import {getTaskListPage, httpRemoveTask, editTask, addTask,enableTask,httpCronTime,httpUnscheduleTask} from '../../api/api';
 
     export default {
         components: {
@@ -172,15 +195,15 @@
             }
         },
         data() {
-            var check_add_cronTime = (rule, value, callback) => {
-                    if (!this.addForm.cron) {
+            var check_cronTime = (rule, value, callback) => {
+                    if (!this.cronForm.cron) {
                         return callback(new Error('cron不能为空'));
                     }
                     setTimeout(() => {
                         let para = {
-                            cron: this.addForm.cron
+                            cron: this.cronForm.cron
                         };
-                        cronTime(para).then(res => {
+                        httpCronTime(para).then(res => {
                             let {code, data} = res.data
                             if (code === 200) {
                                 this.next5Times = data
@@ -193,27 +216,6 @@
                         });
                     }, 300);
             };
-          var check_edit_cronTime = (rule, value, callback) => {
-            if (!this.editForm.cron) {
-              return callback(new Error('cron不能为空'));
-            }
-            setTimeout(() => {
-              let para = {
-                cron: this.editForm.cron
-              };
-              cronTime(para).then(res => {
-                let {code, data} = res.data
-                if (code === 200) {
-                  this.next5Times = data
-                  this.next5Visible = true
-                  callback()
-                }
-                else{
-                  callback(new Error('cron表达式错误'))
-                }
-              });
-            }, 300);
-          };
             return {
                 filters: {
                     name: ''
@@ -232,9 +234,6 @@
                     ],
                     command: [
                         {required: true, message: '执行命令为空', trigger: 'blur'}
-                    ],
-                    cron: [
-                      {validator: check_edit_cronTime, trigger: 'blur'}
                     ]
                 },
                 //编辑界面数据
@@ -242,8 +241,7 @@
                     id: 0,
                     name: '',
                     command: '',
-                    cron: '',
-                    descript: ' ',
+                    description: ' ',
                 },
                 uploadForm: {
                     id: 0,
@@ -257,38 +255,33 @@
                     ],
                     command: [
                         {required: true, message: '执行命令为空', trigger: 'blur'}
-                    ],
-                    cron: [
-                        {validator: check_add_cronTime, trigger: 'blur'}
                     ]
                 },
                 //新增界面数据
                 addForm: {
                     name: '',
                     command: '',
-                    cron: '',
-                    status: 1,
-                    descript: ' '
+                    status: 2,
+                    description: ' '
                 },
                 files: [],
+                cronForm:{
+                  id:'',
+                  name:'',
+                  cron:''
+                },
+                cronFormVisible:false,
+                cronLoading:false,
                 next5Times: [],
-                next5Visible: false
+                next5Visible: false,
+                cronFormRules: {
+                  cron: [
+                    {validator: check_cronTime, trigger: 'blur'}
+                  ]
+                },
             }
         },
         methods: {
-            status_boolean: function (status) {
-                return status === 0
-            },
-            task_link: function(row, column, cell, event){
-              console.log(row.id)
-                alert(row)
-            },
-            status_info: function (row, column) {
-                if (row.status === 0)
-                    return '已启用'
-                else
-                    return '未启用'
-            },
             table_row__class({row, rowIndex}) {
                 if (row.status === 0) {
                     return 'used-row';
@@ -308,7 +301,7 @@
                 };
                 this.listLoading = true;
                 //NProgress.start();
-                getUserListPage(para).then((res) => {
+                getTaskListPage(para).then((res) => {
                     this.total = res.data.total;
                     this.tasks = res.data.tasks;
                     this.listLoading = false;
@@ -317,13 +310,13 @@
             },
             //删除
             handleDel: function (index, row) {
-                this.$confirm('确认删除该记录吗?', '提示', {
+                this.$confirm('确认删除该任务吗?', '提示', {
                     type: 'warning'
                 }).then(() => {
                     this.listLoading = true;
                     //NProgress.start();
-                    let para = {id: row.id};
-                    removeUser(para).then((res) => {
+                    let para = {taskId: row.id};
+                    httpRemoveTask(para).then((res) => {
                         this.listLoading = false;
                         //NProgress.done();
                         this.$message({
@@ -343,77 +336,84 @@
             },
             afterUpload() {
                 this.files = []
+                this.getTasks()
             },
             clear_next_times(){
                 this.next5Times=[]
                 this.next5Visible=false
             },
-            inputFilter(newFile, oldFile, prevent) {
-                if (newFile && !oldFile) {
-                    // Before adding a file
-                    // 添加文件前
-                    // Filter system files or hide files
-                    // 过滤系统文件 和隐藏文件
-                    if (/(\/|^)(Thumbs\.db|desktop\.ini|\..+)$/.test(newFile.name)) {
-                        return prevent()
-                    }
-                    // Filter php html js file
-                    // 过滤 php html js 文件
-                    if (/\.(php5?|html?|jsx?)$/i.test(newFile.name)) {
-                        return prevent()
-                    }
-                }
-            },
-            inputFile(newFile, oldFile) {
-                if (newFile && !oldFile) {
-                    // add
-                    console.log('add', newFile)
-                }
-                if (newFile && oldFile) {
-                    // update
-                    console.log('update', newFile)
-                }
-                if (!newFile && oldFile) {
-                    // remove
-                    console.log('remove', oldFile)
-                }
-            },
-            handleEnable:function(index,row){
-                this.$confirm('确认启用吗？', '提示', {}).then(() => {
-                    //如果para.status是true，则保留原样，即要么0启用，要么１　启用无依赖包
-                    enableTask(row.id).then(res => {
-                        let {code,msg,status} = res.data
-                        if (code !== 200) {
-                            this.$message({
-                                message: msg,
-                                type: 'error'
-                            });
-                        } else if(status ==1){
-                            this.$message({
-                                message: '未上传包',
-                                type: 'warning'
-                            });
-                        }else{
-                            this.$message({
-                                message: '启用成功',
-                                type: 'success'
-                            });
-                            this.getTasks();
-                        }
-                    });
+            handleSchedule:function(index,row){
+              if(row.status===2){
+                this.$notify({
+                  title:'任务无法调度',
+                  message: '任务无法调度，请上传任务程序包',
                 });
+                return
+              }
+              this.cronForm.id=row.id
+              this.cronForm.name=row.name
+              this.cronFormVisible=true
+            },
+            cronSubmit(){
+              this.$confirm('确认定时调度该任务', '确认调度', {}).then(() => {
+                //如果para.status是true，则保留原样，即要么0启用，要么１　启用无依赖包
+                let para={
+                  id:this.cronForm.id,
+                  cron:this.cronForm.cron
+                }
+                enableTask(para).then(res => {
+                  let {code,msg,status} = res.data
+                  if (code !== 200) {
+                    this.$message({
+                      message: msg,
+                      type: 'error'
+                    });
+                  }else{
+                    this.$message({
+                      message: '启用成功',
+                      type: 'success'
+                    });
+                    this.$refs['cronForm'].resetFields();
+                    this.cronFormVisible = false;
+                    this.getTasks();
+                  }
+                });
+              });
+            },
+            handleUnSchedule(index,row){
+              this.$confirm('取消该任务调度吗', '确认取消', {}).then(() => {
+                let para = {
+                  taskId:row.id
+                }
+                httpUnscheduleTask(para).then(res => {
+                  let {code, msg} = res.data
+                  if (code !== 200) {
+                    this.$message({
+                      message: msg,
+                      type: 'error'
+                    });
+                  }
+                  else {
+                    this.$message({
+                      message: 'unschedule success',
+                      type: 'success'
+                    });
+                    this.getTasks()
+                  }
+                })
+              })
             },
             //显示编辑界面
             handleEdit: function (index, row) {
                 this.editFormVisible = true;
-                this.editForm = Object.assign({}, row);
+                this.editForm.id=row.id
+                this.editForm.name=row.name
+                this.editForm.command=row.command
+                this.editForm.description=row.description
             },
             //显示新增界面
             handleAdd: function () {
                 this.addFormVisible = true;
-                this.addForm = {
-                    name: '',
-                };
             },
             //编辑
             editSubmit: function () {
@@ -423,8 +423,6 @@
                             this.editLoading = true;
                             //NProgress.start();
                             let para = Object.assign({}, this.editForm);
-                            //如果para.status是true，则保留原样，即要么0启用，要么１　启用无依赖包
-                            para.status = (para.status_use === true) ? para.status : 2;
                             editTask(para).then(res => {
                                 let {code, msg} = res.data
                                 if (code !== 200) {
@@ -455,7 +453,6 @@
                             this.addLoading = true;
                             //NProgress.start();
                             let para = Object.assign({}, this.addForm);
-                            para.status = (para.status === true) ? 1 : 2;
                             addTask(para).then(res => {
                                 let {code, msg} = res.data
                                 if (code !== 200) {
@@ -508,7 +505,7 @@
         computed: {
             uploadpath() {
                 // `this` 指向 vm 实例
-                return '/upload/tasklib/' + this.uploadForm.id
+                return '/task/upload/' + this.uploadForm.id
             }
         },
         mounted() {

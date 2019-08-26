@@ -75,7 +75,7 @@
 	export default {
 		data() {
 			return {
-				sysName:'VUEADMIN',
+				sysName:'FAST_SCHEDULER',
 				collapsed:false,
 				name: '',
 				avatar: '',

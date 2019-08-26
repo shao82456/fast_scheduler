@@ -12,12 +12,12 @@ const tasks = [];
 for (let i = 0; i < 86; i++) {
   tasks.push(Mock.mock({
     id:Mock.Random.integer(1,100),
-    uid: Mock.Random.integer(1,100),
+    userName: Mock.Random.string('abcdefghijklmnopqrstuvwxyz',4,8),
     name: Mock.Random.string('abcdefghijklmnopqrstuvwxyz',4,8),
     command:'bash '+Mock.Random.string('abcdefghijklmnopqrstuvwxyz',4,8)+'.sh',
     cron:'0 0  * *  * ? ',
-    status:Mock.Random.integer(0,1),
-    descript:'test'
+    status:Mock.Random.integer(0,2),
+    description:'tests'
   }));
 }
 

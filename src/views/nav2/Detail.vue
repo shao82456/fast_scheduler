@@ -1,11 +1,11 @@
 <template>
   <section>
-    <el-row class="toolbar" style="padding-bottom: 0px;">
+    <el-row class="toolbar1" style="padding-bottom: 0px;">
       <el-col :span="12">
         <el-popover
           placement="flow-name"
           :title="flow.name"
-          trigger="hover" width="100%">
+          trigger="hover">
             <div class="text" style="color:gray" >
               {{flow.description}}
             </div>
@@ -16,31 +16,26 @@
           <div slot="reference" style="font-size: 20px;">{{flow.name}}</div>
         </el-popover>
       </el-col>
-      <el-col :span="6" :offset="6">
-        <el-form :inline="true">
-          <el-form-item>
-            <el-button-group>
-              <el-button type="success" size="small" @click="handleSchedule" v-show="this.flow.status===1">Schedule</el-button>
-              <el-button type="danger" size="small"  @click="handleUnSchedule" v-show="this.flow.status===0">UnSchedule</el-button>
-              <el-button type="success" size="small" @click="handleExecute" :disabled="this.flow.status===2">Execute</el-button>
-            </el-button-group>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleUpload">FLowFile<i
+      <el-col :span="12">
+        <div style="float: right;">
+          <el-button-group>
+            <el-button type="success" size="small" @click="handleSchedule" v-show="this.flow.status===1">Schedule</el-button>
+            <el-button type="danger" size="small"  @click="handleUnSchedule" v-show="this.flow.status===0">UnSchedule</el-button>
+            <el-button type="success" size="small" @click="handleExecute" v-show="this.flow.status===1">Execute</el-button>
+          </el-button-group>
+          <el-button-group >
+            <el-button type="primary" size="small" @click="handleUpload"><i
               class="el-icon-upload el-icon--right"></i></el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="danger" size="small" @click="handleRemove">Remove</el-button>
-          </el-form-item>
-        </el-form>
+            <el-button type="danger" size="small" icon="el-icon-delete" @click="handleRemove"></el-button>
+          </el-button-group>
+        </div>
       </el-col>
-      <el-dialog title="Cron FLow" :visible.sync="cronFormVisible" @close="next5Times=[],next5Visible=false">
+    </el-row>
+        <el-dialog title="Cron FLow" :visible.sync="cronFormVisible" @close="next5Times=[],next5Visible=false">
         <el-form :model="cronForm" :rules="cronFormRules" ref="cronForm">
-          <el-form-item label="Name" prop="name">
-            <!--                <el-input v-model="editForm.name"
-            -complete="off"></el-input>-->
-            <textarea>{{this.flow.name}}</textarea>
-          </el-form-item>
+            <el-form-item label="Name" prop="name">
+              <el-input v-model="cronForm.name" :disabled="true"></el-input>
+            </el-form-item>
           <el-form-item label="Schedule Plan" prop="cron">
             <el-input v-model="cronForm.cron" auto-complete="off"></el-input>
           </el-form-item>
@@ -75,7 +70,7 @@
           <el-col :span="18">
             <file-upload
               class="btn btn-primary"
-              :post-action="'/upload/flow/' + this.flow.id"
+              :post-action="'/flow/upload/' + this.flow.id"
               accept="application/zip"
               v-model="files"
               ref="upload">
@@ -86,7 +81,7 @@
           <el-col :span="6">
             <el-button size="small" v-if="!$refs.upload || !$refs.upload.active"
                        @click.prevent="$refs.upload.active = true">
-              上传<i class="el-icon-upload2 el-icon--right"></i>
+              Upload<i class="el-icon-upload2 el-icon--right"></i>
             </el-button>
           </el-col>
         </el-row>
@@ -95,12 +90,12 @@
     </el-row>
     <el-row>
       <el-tabs v-model="activeName" type="card" @tab-click="handleActiveClick">
-        <el-tab-pane label="Graph" name="graph">
+        <el-tab-pane label="图" name="graph">
           <el-row>
               <div id="chartDAG"></div>
           </el-row>
         </el-tab-pane>
-        <el-tab-pane label="Task" name="task">  <el-row>
+        <el-tab-pane label="子任务" name="task">  <el-row>
           <el-dialog title="Add Task" :visible.sync="addFormVisible">
             <el-form :model="addForm" :rules="addFormRules" ref="addForm">
               <el-form-item label="Name" prop="name">
@@ -210,7 +205,7 @@
           </el-row>
         </el-row>
         </el-tab-pane>
-        <el-tab-pane label="Execution" name="execution">
+        <el-tab-pane label="执行记录" name="execution">
           <el-row>
               <div id="chartLine"></div>
           </el-row>
@@ -221,12 +216,12 @@
                   <el-table :data="props.row.taskExecutions" :show-header="false" highlight-current-row  stripe>
                     <el-table-column label="Task Name"   sortable>
                       <template slot-scope="scope">
-                        <el-link :href="'https://localhost:8080/NodeExecutionLog'+scope.$index" target="_blank">{{getTaskName(scope.row.nodeId)}}</el-link>
+                        <router-link :to="logpath(scope.row.id,scope.row.nodeId)" style="text-decoration:none;"><el-link>{{getTaskName(scope.row.nodeId)}}</el-link></router-link>
                       </template>
                     </el-table-column>
                     <el-table-column prop="beginTime" label="Begin"   sortable/>
                     <el-table-column prop="endTime" label="End"  sortabl/>
-                    <el-table-column label="Elapsed"  :formatter="secondsFormatter" sortable/>
+                    <el-table-column label="时间"  :formatter="secondsFormatter" sortable/>
                     <el-table-column prop="status" label="Status"    align="center">
                       <template slot-scope="scope">
                         <div  style="background: #66CD00; font-size: 16px;"  v-show="scope.row.status===0">Success</div>
@@ -300,7 +295,7 @@
           id:12,
           name:'test_run',
           description:'this is a flow for test dev ',
-          status:0,
+          status:1,
           createTime:'2019-05-06 14:41:46',
           updateTime:'2019-05-06 14:41:46'
         },
@@ -370,6 +365,7 @@
         cronFormVisible:false,
         cronLoading:false,
         cronForm:{
+          name:'',
           cron:''
         },
         cronFormRules:{
@@ -380,7 +376,9 @@
         next5Times: [],
         next5Visible: false,
         uploadFormVisible: false,
-        uploadForm:'',
+        uploadForm:{
+          id:-1,
+        },
         files: [],
         chartLine: null,
         executions:[],
@@ -429,7 +427,7 @@
           var hy=height[task.id]
           var hx=-1
           if(xmap.has(hy)){
-            hx=xmap.get(hy)+200
+            hx=xmap.get(hy)+150
           }else{
             hx=0
           }
@@ -437,7 +435,7 @@
           datas[j]={
             name:task.name,
             x:hx,
-            y:hy*200
+            y:hy*100
           }
         }
         //获取连线
@@ -459,9 +457,9 @@
       }
     },
     methods: {
-      getFlow(id){
+      getFlow(){
         let para={
-          flowId:id
+          flowId:this.flow.id
         }
         httpGetFlow(para).then(res=>{
             if(res.data.code===200){
@@ -476,7 +474,7 @@
       },
       handleUpload() {
         this.uploadFormVisible = true;
-        this.uploadForm = Object.assign({}, row);
+        this.uploadForm.id = this.flow.id
       },
 
       handleExecute() {
@@ -522,12 +520,14 @@
                 message: 'remove success',
                 type: 'success'
               });
+              this.$router.push({ path: '/flow/list'});
             }
           });
         }).catch(() => {
         });
       },
       handleSchedule() {
+        this.cronForm.name=this.flow.name
         this.cronFormVisible=true
       },
       handleUnSchedule() {
@@ -551,9 +551,9 @@
           })
         })
       },
-      getTask(id){
+      getTask(){
         let para={
-          flowId:id
+          flowId:this.flow.id
         }
         httpGetFlowTask(para).then(res=>{
           if(res.data.code===200){
@@ -654,11 +654,8 @@
       },
       handleSave:function () {
         this.$confirm('Are you sure you want to save change？', 'Confirm Save', {}).then(() => {
-          let para = {
-            flowId:this.flow.id,
-            tasks:this.tasks
-          }
-          httpSaveTask(para).then(res => {
+          let para = this.tasks
+          httpSaveTask(this.flow.id,para).then(res => {
               let {code, msg} = res.data
               if (code !== 200) {
                 this.$message({
@@ -671,7 +668,7 @@
                   message: 'save success',
                   type: 'success'
                 });
-                this.getTask()
+                this.getTask(this.flow.id)
               }
             })
         })
@@ -697,7 +694,7 @@
               this.cronLoading = true;
               //NProgress.start();
               let para = {
-                flowId:this.flow.id,
+                id:this.flow.id,
                 cron:this.cronForm.cron
               }
               httpCronFlow(para).then(res => {
@@ -715,7 +712,7 @@
                   });
                   this.$refs['cronForm'].resetFields();
                   this.cronFormVisible = false;
-                  this.getflow();
+                  this.getFlow();
                 }
                 this.cronLoading = false
               });
@@ -762,8 +759,10 @@
               itemStyle : {
                 normal : {
                   color:function (params) {
-                    if(params.data.status)
+                    if(params.data.status===0)
                       return '#66CD00'
+                    else if(params.data.status===2)
+                      return '#20a0ff'
                     else
                       return '#CD2626'
                   },
@@ -781,6 +780,7 @@
       },
       getExecutions(){
         let para={
+          flowId:this.flow.id,
           pageNum:this.page
         }
         httpGetFlowExecutionPage(para).then((res)=>{
@@ -804,17 +804,26 @@
             return Math.floor(value/60)+' m '+value%60+' s'
           }else
             return value+' s'
+      },
+      logpath(eid,nodeid){
+        return '/log?eid=n'+eid+'&name='+this.flow.name+' : '+this.getTaskName(nodeid)
       }
     },
     mounted: function () {
       var flowId=this.$route.query.flowId
       if(flowId){
-        this.getFlow(flowId)
-        this.getTask(flowId)
+        this.flow.id=flowId
+        this.getFlow()
+        this.getTask()
+        if(this.flow.status!==2){
+          this.drawDAGChart()
+          this.getExecutions()
+        }
       }else{
         this.drawDAGChart()
+        this.getExecutions()
       }
-      this.getExecutions()
+
     },
   }
 </script>

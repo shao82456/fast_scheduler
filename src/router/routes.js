@@ -28,23 +28,28 @@ let routes = [
     {
         path: '/task',
         component: Home,
-        name: 'Task',
-        iconCls: 'el-icon-message',//图标样式class
+        name: '任务',
         children: [
-            { path: '/task/list', component: Table, name: 'Table' },
+            { path: '/task/list', component: Table, name: '任务列表' },
             { path: '/task/execution', component: Execution, name: '记录' },
         ]
     },
     {
         path: '/flow',
         component: Home,
-        name: 'Flow',
-        iconCls: 'fa fa-id-card-o',
+        name: '任务流',
         children: [
-            { path: '/flow/list', component: Flows, name: 'Flows' },
-            { path: '/flow/detail', component: Detail, name: 'Detail' },
-            { path: '/log', component: Log, name: 'Log' }
+            { path: '/flow/list', component: Flows, name: '任务流列表' },
+            { path: '/flow/detail', component: Detail, name: '任务流详情' },
         ]
+    },
+    {
+      path: '/log',
+      component: Home,
+      name: '日志',
+      children: [
+        { path: '/log', component: Log, name: '日志' },
+      ]
     },
     // {
     //     path: '/',

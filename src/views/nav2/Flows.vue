@@ -7,37 +7,35 @@
             <el-input v-model="filters.name" placeholder="名称"></el-input>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" v-on:click="getFlows">Search</el-button>
+            <el-button type="primary" v-on:click="getFlows">查询</el-button>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleAdd">Add</el-button>
+            <el-button type="primary" @click="handleAdd">新增</el-button>
           </el-form-item>
         </el-form>
       </el-col>
       <el-col :span="6">
         <el-form :inline="true">
-          <el-form-item label="Visibility">
             <el-select v-model="visibility" placeholder="Permision" value="Personal">
               <el-option label="Personal" value="Personal"></el-option>
               <el-option label="Group" value="Group"></el-option>
               <el-option label="All" value="All"></el-option>
             </el-select>
-          </el-form-item>
         </el-form>
       </el-col>
     </el-row>
-    <el-dialog title="Add Flow" :visible.sync="addFormVisible">
+    <el-dialog title="添加任务流" :visible.sync="addFormVisible">
       <el-form :model="addForm" :rules="addFormRules" ref="addForm">
-        <el-form-item label="Name" prop="name">
+        <el-form-item label="名称" prop="name">
           <el-input v-model="addForm.name"></el-input>
         </el-form-item>
-        <el-form-item label="Description">
+        <el-form-item label="描述">
           <el-input type="textarea" v-model="addForm.description"></el-input>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click.native="addLoading=false,addFormVisible=false">Cancel</el-button>
-        <el-button type="primary" @click.native="addSubmit" :loading="addLoading">Submit</el-button>
+        <el-button @click.native="addLoading=false,addFormVisible=false">取消</el-button>
+        <el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>
       </div>
     </el-dialog>
     <el-row>
@@ -46,30 +44,30 @@
           :data="flows"
           style="width: 100%"
           :row-class-name="table_row__class">
-          <el-table-column label="Name"
-                           prop="name">
+          <el-table-column label="名称"
+                           prop="name" sortable>
             <template slot-scope="scope">
               <router-link :to="'/flow/detail?flowId='+scope.row.id" style="text-decoration:none;"><el-link>{{scope.row.name}}</el-link></router-link>
             </template>
           </el-table-column>
           <el-table-column
-            label="Description"
+            label="描述"
             prop="description">
           </el-table-column>
           <el-table-column
-            label="Owner"
+            label="用户"
             prop="userName">
           </el-table-column>
           <el-table-column
-            label="Scheduling">
+            label="执行计划" sortable>
             <template slot-scope="scope">
               <div v-show="scope.row.status===0">{{scope.row.cron}}</div>
-              <div v-show="scope.row.status!==0">UnSchedule</div>
+              <div v-show="scope.row.status!==0">未调度</div>
             </template>
           </el-table-column>
-          <el-table-column label="Operation">
+          <el-table-column label="操作">
             <template slot-scope="scope">
-              <el-button type="danger" size="mini" :disabled="scope.row.status!==0" @click="handleRemoveSchedule(scope.$index, scope.row)">Remove Schedule</el-button>
+              <el-button type="danger" size="small" :disabled="scope.row.status!==0" @click="handleRemoveSchedule(scope.$index, scope.row)">移除调度</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -146,11 +144,9 @@
               type: 'error'
             });
           } else {
-            this.$message({
-              message: 'save success',
-              type: 'success'
-            });
-            this.getTask()
+            let flowId=res.data.id
+            // this.$router.push({ path: '/flow/detail&?flowId='+12 });
+            this.$router.push({ path: '/flow/detail'+'?flowId='+flowId });
           }
         })
       },
@@ -204,7 +200,7 @@
     /*background: gray;*/
   }
   .el-table .used-row {
-    background: #f0f9eb;
+    background:	#FAFAFA;
   }
 
 </style>

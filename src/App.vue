@@ -49,6 +49,15 @@ body {
     margin-bottom: 10px;
   }
 }
+.toolbar1 {
+  background: #f2f2f2;
+  padding: 5px;
+  //border:1px solid #dfe6ec;
+  margin: 10px 0px;
+  .el-form-item {
+    margin-bottom: 10px;
+  }
+}
 
 .fade-enter-active,
 .fade-leave-active {
